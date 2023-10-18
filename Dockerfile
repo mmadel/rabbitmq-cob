@@ -1,27 +1,39 @@
-FROM rabbitmq:3-management
+#
+# RabbitMQ Dockerfile
+#
+# https://github.com/dockerfile/rabbitmq
+#
 
-RUN rm -f /etc/rabbitmq/conf.d/management_agent.disable_metrics_collector.conf
+# Pull base image.
+FROM dockerfile/ubuntu
 
-# extract "rabbitmqadmin" from inside the "rabbitmq_management-X.Y.Z.ez" plugin zipfile
-# see https://github.com/docker-library/rabbitmq/issues/207
-RUN set -eux; \
-	erl -noinput -eval ' \
-		{ ok, AdminBin } = zip:foldl(fun(FileInArchive, GetInfo, GetBin, Acc) -> \
-			case Acc of \
-				"" -> \
-					case lists:suffix("/rabbitmqadmin", FileInArchive) of \
-						true -> GetBin(); \
-						false -> Acc \
-					end; \
-				_ -> Acc \
-			end \
-		end, "", init:get_plain_arguments()), \
-		io:format("~s", [ AdminBin ]), \
-		init:stop(). \
-	' -- /plugins/rabbitmq_management-*.ez > /usr/local/bin/rabbitmqadmin; \
-	[ -s /usr/local/bin/rabbitmqadmin ]; \
-	chmod +x /usr/local/bin/rabbitmqadmin; \
-	apk add --no-cache python3; \
-	rabbitmqadmin --version
+# Add files.
+ADD rabbitmq-start /usr/local/bin/
 
-EXPOSE 15671 15672 5672
+# Install RabbitMQ.
+RUN \
+  wget -qO - https://www.rabbitmq.com/rabbitmq-signing-key-public.asc | apt-key add - && \
+  echo "deb http://www.rabbitmq.com/debian/ testing main" > /etc/apt/sources.list.d/rabbitmq.list && \
+  apt-get update && \
+  DEBIAN_FRONTEND=noninteractive apt-get install -y rabbitmq-server && \
+  rm -rf /var/lib/apt/lists/* && \
+  rabbitmq-plugins enable rabbitmq_management && \
+  echo "[{rabbit, [{loopback_users, []}]}]." > /etc/rabbitmq/rabbitmq.config && \
+  chmod +x /usr/local/bin/rabbitmq-start
+
+# Define environment variables.
+ENV RABBITMQ_LOG_BASE /data/log
+ENV RABBITMQ_MNESIA_BASE /data/mnesia
+
+# Define mount points.
+VOLUME ["/data/log", "/data/mnesia"]
+
+# Define working directory.
+WORKDIR /data
+
+# Define default command.
+CMD ["rabbitmq-start"]
+
+# Expose ports.
+EXPOSE 5672
+EXPOSE 15672

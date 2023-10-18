@@ -1,0 +1,29 @@
+{
+  "name": "Rabbit COB Deployment to Heroku",
+  "description": "Deployment of the RabbitMQ COB",
+  "keywords": [
+    "identity",
+    "oauth",
+    "saml",
+    "keycloak",
+    "keycloak.x",
+    "heroku",
+    "quarkus"
+  ],
+  "stack": "container",
+  "repository": "https://github.com/mmadel/rabbitmq-cob",
+  "logo": "",
+  "success_url": "/",
+  "env": {
+
+  },
+  "formation": {
+    "web": {
+      "quantity": 1,
+      "size": "free"
+    }
+  },
+  "addons": [
+
+  ]
+}
